@@ -6,7 +6,7 @@ import datetime
 minutes = 15
 seconds = 10 #minutes*60
 numCycles = 4
-hours = [7,13,17,19,21]
+hours = [7,13,14,17,19,21]
     
 def grab(imageName):
 	response = urllib2.urlopen('http://10.129.59.177/axis-cgi/jpg/image.cgi')
@@ -19,21 +19,27 @@ def timeTest(N):
 	print secs
 	print 1.0*secs/N
 	
+def getImageName():
+	t = time.time()
+	timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
+	fileName = 'WestLot ' + timeStamp +'.png' 
+	return fileName
+	
+	
 
 	
 
 
 def main():
 	while True:
-		t = time.time()
-		timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
+		fileName = getImageName()
 		h = time.strftime('%H')#the current hour
-		fileName = 'WestLot ' + timeStamp +'.png' 
 		#for i in xrange(numCycles):
-		if h in hours:
+		if int(h) in hours:
 			grab(fileName)
 			print fileName
 			time.sleep(seconds)
+			break
 		
 if __name__ == "__main__":
 	main()
