@@ -18,6 +18,33 @@ hours = [7,13,17,19,21]
 # In this section, we have all the functions required to handle the image processing
 #######################################################################################################################################################################
 
+def grab(imageName, write = True):
+	'''Gets the image and saves as timestamp '''
+	
+	response = urllib2.urlopen('http://10.129.59.177/axis-cgi/jpg/image.cgi')
+	if write:
+		print "Writing"
+		with open(imageName, 'wb') as outfile:
+			outfile.write(response.read())
+	else: 
+		print "Not Writing"
+	return response
+
+
+def timeTest(N):
+	secs = timeit.timeit("grabImage.grab('TimeitTest.jpg')",setup="import grabImage",number=N)
+	print secs
+	print 1.0*secs/N
+	
+	
+def getImageName():
+	'''Gets the time stamp and other info that defines image name. '''
+	t = time.time()
+	timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
+	fileName = 'WestLot ' + timeStamp +'.png' 
+	return fileName
+
+
 # Function that takes extracts the coordinates of the spaces for which to test
 # Input: Name of the text file which has the coordinates
 # Output: A matrix of size nX4, where n is the number of spaces to test, and 4 represents the coordinates of each space
@@ -29,18 +56,8 @@ def get_coordinates(fileName):
             coordinates.append(int_list);
     return coordinates
 
-# Function that grabs the image from the web
-def grab(imageName):
-	response = urllib2.urlopen('http://10.129.59.177/axis-cgi/jpg/image.cgi')
-	with open(imageName, 'wb') as outfile:
-		outfile.write(response.read())
 
-def timeTest(N):
-	secs = timeit.timeit("grabImage.grab('TimeitTest.jpg')",setup="import grabImage",number=N)
-	print secs
-	print 1.0*secs/N
-
-def main():
+def loop():
 	while True:
 		t = time.time()
 		timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
@@ -52,8 +69,7 @@ def main():
 			print fileName
 			time.sleep(seconds)
 
-if __name__ == "__main__":
-	main()
+
 
 # Function that takes extracts the positions of the spaces for which to test. Positions are in matrix format
 # Input: Name of the text file which has the positions
@@ -115,22 +131,30 @@ class Spot:
 #######################################################################################################################################################################
 
 def main_func():
-    # Need to add in Andres's code to grab an image
-    coordinates = get_coordinates('coordinates.txt');
-    positions = get_positions('positions.txt');
-    crops = get_crops(image, coordinates);
-    hogData = create_hog(crops);
-    hogData = hogData.astype(np.float32);
+	
+	#grab the image
+	fileName = getImageName()
+	grab(fileName)
+	image = cv2.imread(fileName)
+	
+	# Need to add in Andres's code to grab an image
+	coordinates = get_coordinates('coordinates.txt');
+	positions = get_positions('positions.txt');
+	crops = get_crops(image, coordinates);
+	hogData = create_hog(crops);
+	hogData = hogData.astype(np.float32);
 
-    # Initialize SVM
-    svm = cv2.SVM();
-    svm.load('svm_data.dat');
-    result = svm.predict_all(hogData);
+	# Initialize SVM
+	svm = cv2.SVM();
+	svm.load('svm_data.dat');
+	result = svm.predict(hogData);
 
-    spaces_list = [];
-    for i in range(len(result)):
-        if (result[i][0] == 1):
-            spaces_list.append(Spot(positions[i][0], positions[i][1]));
-    return spaces_list
+	spaces_list = [];
+	for i in range(len(result)):
+		if (result[i][0] == 1):
+			spaces_list.append(Spot(positions[i][0], positions[i][1]));
+	return spaces_list
             
-    
+#Run when main.py called
+if __name__ == "__main__":
+	main_func()
