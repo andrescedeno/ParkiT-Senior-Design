@@ -14,36 +14,10 @@ seconds = 10 #minutes*60
 numCycles = 4
 hours = [7,13,17,19,21]
 
+
 #######################################################################################################################################################################
 # In this section, we have all the functions required to handle the image processing
 #######################################################################################################################################################################
-
-def grab(imageName, write = True):
-	'''Gets the image and saves as timestamp '''
-	
-	response = urllib2.urlopen('http://10.129.59.177/axis-cgi/jpg/image.cgi')
-	if write:
-		print "Writing"
-		with open(imageName, 'wb') as outfile:
-			outfile.write(response.read())
-	else: 
-		print "Not Writing"
-	return response
-
-
-def timeTest(N):
-	secs = timeit.timeit("grabImage.grab('TimeitTest.jpg')",setup="import grabImage",number=N)
-	print secs
-	print 1.0*secs/N
-	
-	
-def getImageName():
-	'''Gets the time stamp and other info that defines image name. '''
-	t = time.time()
-	timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
-	fileName = 'WestLot ' + timeStamp +'.png' 
-	return fileName
-
 
 # Function that takes extracts the coordinates of the spaces for which to test
 # Input: Name of the text file which has the coordinates
@@ -55,21 +29,6 @@ def get_coordinates(fileName):
             int_list = [int(i) for i in line.split()];
             coordinates.append(int_list);
     return coordinates
-
-
-def loop():
-	while True:
-		t = time.time()
-		timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
-		h = time.strftime('%H')#the current hour
-		fileName = 'WestLot ' + timeStamp +'.png' 
-		#for i in xrange(numCycles):
-		if h in hours:
-			grab(fileName)
-			print fileName
-			time.sleep(seconds)
-
-
 
 # Function that takes extracts the positions of the spaces for which to test. Positions are in matrix format
 # Input: Name of the text file which has the positions
@@ -120,6 +79,44 @@ def create_hog(images):
         hogData[i] = hog(images[i]);
     return hogData
 
+def grab(imageName, write = True):
+	'''Gets the image and saves as timestamp '''
+	
+	response = urllib2.urlopen('http://10.129.59.177/axis-cgi/jpg/image.cgi')
+	if write:
+		#print "Writing"
+		with open(imageName, 'wb') as outfile:
+			outfile.write(response.read())
+	else: 
+		print "Not Writing"
+	return response
+
+
+def timeTest(N):
+	secs = timeit.timeit("grabImage.grab('TimeitTest.jpg')",setup="import grabImage",number=N)
+	print secs
+	print 1.0*secs/N
+	
+	
+def getImageName():
+	'''Gets the time stamp and other info that defines image name. '''
+	t = time.time()
+	timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
+	fileName = 'WestLot ' + timeStamp +'.png' 
+	return fileName
+
+def loop():
+	while True:
+		t = time.time()
+		timeStamp = datetime.datetime.fromtimestamp(t).strftime('%m%d%Y-%H%M%S') #time stamp
+		h = time.strftime('%H')#the current hour
+		fileName = 'WestLot ' + timeStamp +'.png' 
+		#for i in xrange(numCycles):
+		if h in hours:
+			grab(fileName)
+			print fileName
+			time.sleep(seconds)
+
 # The parking spot class
 class Spot:
     def __init__(self, x, y):
@@ -147,14 +144,17 @@ def main_func():
 	# Initialize SVM
 	svm = cv2.SVM();
 	svm.load('svm_data.dat');
-	result = svm.predict(hogData);
+	result = svm.predict_all(hogData);
 
 	spaces_list = [];
 	for i in range(len(result)):
 		if (result[i][0] == 1):
 			spaces_list.append(Spot(positions[i][0], positions[i][1]));
+			cv2.circle(image, ((coordinates[i][2] + coordinates[i][3])/2, (coordinates[i][0] + coordinates[i][1])/2), 35, (0, 0, 255), 5);
+	cv2.imwrite('Result.jpg', image);
 	return spaces_list
             
 #Run when main.py called
 if __name__ == "__main__":
 	main_func()
+
